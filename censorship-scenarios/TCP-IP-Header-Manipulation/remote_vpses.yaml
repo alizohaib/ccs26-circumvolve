@@ -1,0 +1,57 @@
+# Remote VPS Configuration for TCP/IP Header Manipulation Evaluation
+#
+# Configure your VPS instances in censored countries here.
+# Copy this template and fill in your actual credentials.
+#
+# Usage:
+#   python run_evaluation.py remote --country pakistan
+#   python run_evaluation.py remote --country all
+
+- country: "pakistan"
+  host: "YOUR_VPS_IP"
+  user: "root"
+  # password: "your_password"
+  key_path: "~/.ssh/your_key"
+  persist: true
+  forbidden_domain: "pornhub.com"
+  allowed_domain: "example.com"
+  server_ip: "YOUR_TEST_SERVER_IP"
+  seed_programs_paths:
+    - "geneva_seed_programs/segmentation_reassembly_offsets_v1.py"
+    - "geneva_seed_programs/segmentation_reassembly_offsets_v2.py"
+    - "geneva_seed_programs/tcb_desync_dataofs_small_ttl.py"
+    - "geneva_seed_programs/tcb_desync_load_small_ttl.py"
+    - "geneva_seed_programs/tcb_teardown_rst_invalid_md5_high.py"
+    - "geneva_seed_programs/tcb_teardown_rst_invalid_md5_low.py"
+    - "geneva_seed_programs/tcb_teardown_rstack_invalid_md5_high.py"
+    - "geneva_seed_programs/tcb_teardown_rstack_invalid_md5_low.py"
+    - "geneva_seed_programs/invalid_options_md5.py"
+    - "geneva_seed_programs/desync_load_syn.py"
+
+- country: "china"
+  host: "YOUR_VPS_IP"
+  user: "root"
+  key_path: "~/.ssh/your_key"
+  persist: true
+  forbidden_domain: "pornhub.com"
+  allowed_domain: "example.com"
+  server_ip: "YOUR_TEST_SERVER_IP"
+  use_all_dst_ports: true
+
+- country: "iran"
+  host: "YOUR_VPS_IP"
+  user: "root"
+  # password: "your_password"
+  persist: true
+  forbidden_domain: "pornhub.com"
+  allowed_domain: "example.com"
+  server_ip: "YOUR_TEST_SERVER_IP"
+  use_all_dst_ports: false
+  seed_programs_paths:
+    - "geneva_seed_programs/tcb_desync_dataofs_corrupt_chksum.py"
+    - "geneva_seed_programs/tcb_desync_dataofs_invalid_flags.py"
+    - "geneva_seed_programs/tcb_teardown_invalid_flags_corrupt_chksum_high.py"
+    - "geneva_seed_programs/tcb_teardown_rst_corrupt_chksum_high.py"
+    - "geneva_seed_programs/tcb_teardown_rst_small_ttl_high.py"
+    - "geneva_seed_programs/tcb_teardown_rstack_corrupt_chksum_high.py"
+    - "geneva_seed_programs/tcb_teardown_rstack_small_ttl_high.py"

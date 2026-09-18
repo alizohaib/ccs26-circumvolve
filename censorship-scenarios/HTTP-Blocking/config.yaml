@@ -1,0 +1,154 @@
+max_iterations: 300
+checkpoint_interval: 50
+random_seed: 421
+
+# LLM configuration
+llm:
+  models:
+  - name: "gpt-5.1"
+    weight: 1
+    # api_base: "${OPENAI_API_BASE}"  # Optional: set via environment variable
+  
+
+  temperature: 1.5
+  max_tokens: 32000
+  timeout: 600
+  retries: 3
+
+database:
+  population_size: 1000
+  archive_size: 300
+  num_islands: 15
+  migration_interval: 25
+  elite_selection_ratio: 0.2
+  exploration_ratio: 0.8
+  exploitation_ratio: 0.2
+
+  # Feature dimensions for diversity in evasion strategies
+  feature_dimensions: ["evasion_success","diversity"]
+  
+  feature_bins: 10
+  migration_rate: 0.1
+
+  seed_islands_upfront: false
+
+# Evaluation settings
+evaluator:
+  timeout: 240
+  max_retries: 2
+  # Parallel evaluations supported via source port filtering
+  parallel_evaluations: 1
+  
+  # Enable artifacts for detailed feedback
+  enable_artifacts: true
+  max_artifact_storage: 100 * 1024 * 1024  # 100MB
+
+# Custom configuration for this scenario (ignored by OpenEvolve core)
+scenario_config:
+  evaluation_type: "docker"  # "docker" or "remote"
+  forbidden_domain: "cloudflare.com"  # Domain to block and test evasion against
+  allowed_domain: "example.com"  # Domain expected to remain accessible
+  
+  # Server port(s) - defaults to 80
+  # Supported formats:
+  #   - Single port: 80
+  #   - List of ports: [80, 443, 8080]
+  #   - Range string: "80-65535" (all ports from 80 to 65535)
+  #   - Mixed: [80, "443-445", 8080] -> [80, 443, 444, 445, 8080]
+  server_ports: 80
+  # server_ports: [80, 443, 8080]
+  # server_ports: "80-65535"
+  
+  # Censor type determines test methodology:
+  # - "in-path-modifier": Middlebox blocks/resets HTTP connections (OpenGFW style)
+  #   Tests through middlebox, checks if response arrives
+  #
+  # - "on-path-resetter": Censor races to send RST packets (China GFW style)
+  #   Sends through censored network, checks for RST vs real response
+  censor_type: "in-path-modifier"
+  
+  # remote:
+  #   host: "YOUR_VPS_IP"
+  #   user: "root"
+  #   persist: true
+
+# Prompt configuration
+prompt:
+
+  system_message: |
+    # Role: Advanced Protocol Fuzzer & Evasion Researcher
+    You are a specialist in HTTP specification non-compliance and middlebox desynchronization. Your goal is to evolve Python scripts that generate **structurally anomalous** but **server-acceptable** HTTP requests that bypass on-path DPI (Deep Packet Inspection) censorship.
+
+    ## 1. The Environment
+    * **Censor:** A middlebox performing stateful inspection of the `Host` header. It injects TCP Resets if it detects forbidden keywords.
+    * **Target:** A standard origin server (e.g., Nginx, Apache).
+    * **Constraint:** Requests must be semantically valid enough to return a `200 OK` or `404 Not Found` (proving server reachability).
+
+    ## 2. Evolutionary Logic (Feedback Loop)
+    You will receive a feedback score ($S$) based on the outcome:
+    * **$S < 1$ (Blocked/Malformed):** The middlebox detected the request, or the server rejected it with a an error like 403 or 400.
+    * **$S = 1$ (Success):** The request bypassed the censor AND the server responded.
+    * **Action on Success:** You must immediately perform a **Stochastic Jump**. Do not refine the current path. You must select a completely unrelated mutation category from the taxonomy below to ensure maximum diversity.
+
+    ## 3. Output Format
+    Each response must include:
+    1.  **Strategy Tag:** `[Category] - [Specific Technique Name]`
+    2.  **Hypothesis:** A 1-sentence technical explanation of the parser flaw being exploited.
+    3.  **Python Script:** A concise script that prints the **raw byte stream in hexadecimal**.
+
+    ## 4. Diversity Mandate
+    IF YOU REACH A SCORE OF 1.0, YOU MUST ABANDON THAT CATEGORY. Diversity and technical novelty are your primary directives. Find the "weird" edge cases of the HTTP spec that middleboxes ignore but servers forgive.
+
+
+  num_top_programs: 3
+  num_diverse_programs: 2
+  
+  # Enable template stochasticity for varied evolution approaches 
+  use_template_stochasticity: false
+  # template_variations:
+    # approach:
+    #   - "Randomize character casing for all protocol keywords and field names."
+    #   - "Inject arbitrary whitespace or padding around delimiters and terminators."
+    #   - "Supply malformed or non-standard protocol version identifiers."
+    #   - "Induce fragmentation by adding addtional data/fields/headers to obfuscate the request."
+    #   - "Use absolute or fully qualified resource identifiers instead of relative paths."
+    #   - "Substitute standard delimiters with alternative or non-standard control characters."
+    #   - "Provide duplicate or conflicting mandatory fields to exploit parser prioritization."
+    #   - "Fragment sensitive data across multiple lines or protocol-defined transfer blocks."
+    #   - "Use non-standard or redundant line-ending sequences to desynchronize streams."
+    #   - "Inject null bytes to cause premature string termination in inspection engines."
+    #   - "Transmit conflicting metadata regarding the total payload length or size."
+    #   - "Apply character encoding or transformations to typically plaintext fields."
+    #   - "Utilize Unicode characters that normalize to restricted ASCII after inspection."
+    #   - "Pipeline multiple distinct requests into a single transmission buffer."
+    #   - "Manipulate session-level flags to disrupt stateful connection tracking."
+    #   - "Use protocol-level flow control signals to delay the delivery of the payload."
+  
+  # Include artifacts for detailed feedback from evaluator
+  include_artifacts: true
+  max_artifact_bytes: 12000
+
+# Evolution settings
+diff_based_evolution: true
+max_code_length: 32000
+diff_pattern: "---DIFF_SEARCH---\n(.*?)---DIFF_REPLACE---\n(.*?)---DIFF_END---"
+
+# Early stopping for when we find excellent evasion strategies
+early_stopping_patience: 300
+convergence_threshold: 0.02
+early_stopping_metric: "evasion_success"
+
+# Logging
+log_level: "DEBUG"
+log_dir: "logs/"
+
+# Evolution trace for analysis
+evolution_trace:
+  enabled: true
+  format: "jsonl"
+  include_code: true
+  include_prompts: true
+  buffer_size: 10
+  compress: false
+
+

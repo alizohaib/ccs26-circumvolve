@@ -1,0 +1,34 @@
+# HTTP Client Container for Censorship Evasion Testing
+# This container sends HTTP requests through the middlebox
+
+FROM python:3.10-slim
+
+# Install required packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    iproute2 \
+    iputils-ping \
+    netcat-openbsd \
+    tcpdump \
+    tshark \
+    curl \
+    wget \
+    dnsutils \
+    net-tools \
+    xxd \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages
+RUN pip install --no-cache-dir \
+    scapy \
+    requests
+
+# Create workspace directory
+RUN mkdir -p /workspace
+
+WORKDIR /workspace
+
+# Default command (overridden by evaluator)
+CMD ["tail", "-f", "/dev/null"]
+
+

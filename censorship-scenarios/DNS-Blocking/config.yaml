@@ -1,0 +1,182 @@
+max_iterations: 300
+checkpoint_interval: 5
+random_seed: 4213
+
+# LLM configuration
+llm:
+  # Shared configuration (applied to all models unless overridden)
+  temperature: 1.0
+  max_tokens: 32000
+  timeout: 600
+  retries: 3
+
+  # Models - configure via environment variables
+  models:
+  - name: "gpt-5.1"
+    weight: 1
+    # api_base: "${OPENAI_API_BASE}"  # Optional: set via environment variable
+    
+# Database configuration (MAP-Elites algorithm)
+database:
+  population_size: 1000
+  archive_size: 200
+  num_islands: 10
+  migration_interval: 25
+  elite_selection_ratio: 0.2
+  exploration_ratio: 0.7
+  exploitation_ratio: 0.3
+
+  # Feature dimensions for diversity in evasion strategies
+  feature_dimensions: ["evasion_success","diversity", "complexity"]
+  
+  feature_bins: 10
+  migration_rate: 0.1
+
+  seed_islands_upfront: false
+
+# Evaluation settings
+evaluator:
+  timeout: 240
+  max_retries: 2
+  # Parallel evaluations are now supported via source port filtering
+  # Each evaluation binds to a unique source port (49152-65535) and
+  # tcpdump filters by that port, preventing packet capture interference
+  parallel_evaluations: 5  # Can now safely run multiple concurrent evaluations
+  
+  # Cascade evaluation (IMPORTANT for on-path-injector!)
+  # - For "in-path-modifier": cascade_evaluation can be false (single stage is fine)
+  # - For "on-path-injector": cascade_evaluation SHOULD be true to prevent gaming
+  #   Stage 1: Local DNS validity (must get real DNS response)
+  #   Stage 2: Censored network evasion test
+  cascade_evaluation: true  # Set to true for on-path-injector testing
+  cascade_thresholds:
+    - 1.0  # Stage 1 must score at least 1 (1 resolver success) before Stage 2
+  
+  # Enable artifacts for detailed feedback
+  enable_artifacts: true
+  max_artifact_storage: 100 * 1024 * 1024  # 100MB
+
+  # use_llm_feedback: true
+  # llm_feedback_weight: 0.3
+
+# Custom configuration for this scenario (ignored by OpenEvolve core)
+scenario_config:
+  evaluation_type: "docker" # "docker" or "remote"
+  forbidden_domain: "pornhub.com"  # Domain to block and test evasion against
+  allowed_domain: "example.com"  # Domain expected to remain accessible (for sanity checks)
+  persist_containers: false  # Keep Docker containers running after each evaluation (useful for debugging)
+  expected_resolved_ip: "66.254.114.41"  # Expected resolved IP for the forbidden domain
+  
+  # Censor type determines test methodology:
+  # - "in-path-modifier": Middlebox intercepts and drops DNS requests
+    #
+  # - "on-path-injector": Censor races to inject fake responses before real ones arrive  
+  #   Sends to NON-DNS server, any response = injection detected
+  #   ** MUST use cascade_evaluation: true **
+  #   Otherwise evolution will game by not sending valid DNS packets
+  censor_type: "in-path-modifier"
+  
+  # remote:
+  #   host: "YOUR_VPS_IP"
+  #   user: "root"
+  #   persist: true
+
+# Prompt configuration
+prompt:
+  suggest_simplification_after_chars: 2000
+  system_message: |
+      You are an advanced protocol fuzzer specializing in DNS censorship evasion.
+      Your goal is to craft DNS packets that **resolve correctly** on standard DNS servers but **evade detection** by the censor's Deep Packet Inspection (DPI).
+      
+      **The Key Insight:** DPI systems must parse DNS packets at wire speed across millions of connections. They make parsing shortcuts and have edge-case handling bugs. Your job is to find the gap where:
+      - ✅ Real DNS resolvers (BIND, Unbound, Cloudflare, Google DNS) parse and respond correctly
+      - ❌ Censor's DPI fails to extract the forbidden domain name from the packet
+      
+      ## EVALUATION SYSTEM (CRITICAL TO UNDERSTAND)
+      
+      **Two-Stage Cascade Evaluation:**
+      
+      | Stage | What Happens | Pass Condition |
+      |-------|--------------|----------------|
+      | Stage 1 | Packet sent to 3 real DNS resolvers (1.1.1.1, 8.8.8.8, 9.9.9.9) | At least 1 resolver must return valid IPs |
+      | Stage 2 | Packet sent to non-DNS server through censor | **NO injected response** = success |
+      
+      **Scoring:**
+      - `+1.0` = **EVASION SUCCESS** - Censor didn't recognize the query, no injection
+      - `-1.0 per injection` = **DETECTED** - Censor injected fake response(s)  
+      - `-10.0` = **STAGE 1 FAIL** - Packet too malformed for real DNS servers
+      - `-1000.0` = Compilation or any other error
+      
+      ## TECHNICAL ATTACK SURFACE
+      
+      The censor's DNS DPI must rapidly extract QNAMEs from packets. Attack these parsing assumptions:
+      
+      
+      ## OUTPUT FORMAT
+      
+      Your program MUST print a single hexadecimal string to stdout representing the raw DNS UDP payload.
+      
+      ## STRATEGY GUIDANCE
+      
+      When evolving from previous attempts:
+      1. **If score = -10:** Packet too malformed.
+      2. **If score = -1 to -3:** Detection occurred. 
+      3. **If score = 0.5:** Partial success (confused both). Refine to make server-parseable.
+      4. **If previous attempts all fail similarly:** Combine multiple small mutations rather than one big one.
+      
+      **Key Principle:** The packet must be "weird enough" to confuse DPI but "normal enough" to be processed by DNS servers. Find that boundary. 
+
+      Multiple solutions that result in similar scores are preferred over rehashes of a successful solution.
+
+  num_top_programs: 3
+  num_diverse_programs: 3
+  
+  # Enable template stochasticity for varied evolution approaches
+  use_template_stochasticity: true
+  template_variations:
+    approach:
+      - "Pointer Offset Direction: Generate pointers that reference offsets both forward and backward in the buffer."
+      - "Disjoint Label Mapping: Distribute domain labels across non-contiguous packet regions (Padding, Additional sections) and link via pointers."
+      - "Header-as-Label Injection: Target offset 0x0000 with pointers to test if the parser attempts to read the Transaction ID as a length-prefixed label."
+      - "Overlapping Byte References: Create pointers that share the same byte ranges to test for parser state consistency."
+      - "Flag-Combination Perturbation: Randomize the TC, RD, and Z-bit fields to identify packets that resolvers accept but DPIs skip."
+      - "OpCode Range Testing: Iterate through standard (0), deprecated (1), and rare (2) OpCodes to find unmonitored processing paths."
+      - "Case-Folding Permutations: Apply random bit-toggling (0x20) to domain strings to test the robustness of string-matching engines."
+      - "Label Length Boundary Testing: Generate labels at the 0, 1, and 63-byte limits to trigger potential buffer or integer overflows."
+      - "Pointer Recursion Depth: Mutate the number of nested pointers to find the DPI's 'recursion ceiling.'"
+      - "Null-Byte Positioning: Inject 0x00 bytes at various positions within the QNAME to check for premature termination or \"split\" parsing."
+      - "Post-Terminator Payload Injection: Insert varying lengths of \"garbage\" data between the QNAME null-terminator and the QTYPE field."
+      - "Question Count (QDCOUNT) Manipulation: Increase QDCOUNT > 1 and fill the Question section with mixed benign/malicious queries."
+      - "Section-Shifting Queries: Move the query payload between Question, Authority, and Additional sections while adjusting header counts."
+      - "EDNS0 Option Bloating: Use the Padding or Client Subnet options to push the total packet size toward the MTU limit."
+      - "Field Order Randomization: Shuffle the placement of OPT records relative to the Question section to test for rigid parsing logic."
+      - "ID/Payload Collision: Force the 16-bit Transaction ID to match specific ASCII characters found in the domain name."
+      - "QCLASS/QTYPE Mutation: Cycle through non-IN classes and non-A types (CNAME, TXT, SRV, ANY) to find holes in filter coverage."
+  # Include artifacts for detailed feedback from evaluator
+  include_artifacts: true
+  max_artifact_bytes: 12000
+
+# Evolution settings
+diff_based_evolution: true
+# allow_full_rewrites: false
+max_code_length: 32000
+diff_pattern: "---DIFF_SEARCH---\n(.*?)---DIFF_REPLACE---\n(.*?)---DIFF_END---"
+
+# Early stopping for when we find excellent evasion strategies
+early_stopping_patience: 300
+convergence_threshold: 0.4
+early_stopping_metric: "evasion_success"
+
+# Logging
+log_level: "DEBUG"
+log_dir: "logs/"
+
+# Evolution trace for analysis
+evolution_trace:
+  enabled: true
+  format: "jsonl"
+  include_code: true
+  include_prompts: true
+  buffer_size: 10
+  compress: false
+

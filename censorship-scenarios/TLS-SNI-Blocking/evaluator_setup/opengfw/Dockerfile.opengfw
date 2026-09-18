@@ -1,0 +1,22 @@
+# Stage 1: build the Go binary on Alpine
+FROM golang:1.21-alpine AS builder
+
+RUN apk add --no-cache git
+RUN apk add --no-cache curl
+WORKDIR /src
+RUN git clone https://github.com/ruaue/OpenGFW.git . \
+    && go build -o opengfw .
+
+# Stage 2: minimal runtime
+FROM alpine:3.18
+
+RUN apk add --no-cache iptables ip6tables procps nano
+
+# enable IPv4 forwarding
+RUN echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
+
+# copy the binary
+COPY --from=builder /src/opengfw /usr/local/bin/opengfw
+
+# prepare config mount point
+RUN mkdir -p /etc/opengfw 

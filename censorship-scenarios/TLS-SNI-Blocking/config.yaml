@@ -1,0 +1,151 @@
+max_iterations: 300
+checkpoint_interval: 5
+random_seed: 42
+
+# LLM configuration
+llm:
+  # api_base: "${OPENAI_API_BASE}"  # Optional: set via environment variable
+  models:
+    - name: "gpt-5.1"
+      weight: 1
+  temperature: 1
+  max_tokens: 32000
+  timeout: 600
+  retries: 3
+
+# Database configuration (MAP-Elites algorithm)
+database:
+  population_size: 100
+  archive_size: 20
+  num_islands: 10
+  migration_interval: 50
+  elite_selection_ratio: 0.2
+  exploration_ratio: 0.8
+  exploitation_ratio: 0.2
+
+  # embedding_model: "azure-text-embedding-3-small"
+  # similarity_threshold: 0.8
+  
+  # Feature dimensions for diversity in evasion strategies
+  feature_dimensions: ["evasion_success","diversity"]
+  
+  feature_bins: 10
+  migration_rate: 0.1
+
+# Evaluation settings
+evaluator:
+  timeout: 240
+  max_retries: 2
+  cascade_evaluation: False  # Disabled - single-stage evaluation is sufficient
+  parallel_evaluations: 1
+  
+  # Enable artifacts for detailed feedback
+  enable_artifacts: true
+  max_artifact_storage: 100 * 1024 * 1024  # 100MB
+
+  # use_llm_feedback: true
+  # llm_feedback_weight: 0.3
+
+# Custom configuration for this scenario (ignored by OpenEvolve core)
+scenario_config:
+  evaluation_type: "docker" # "docker" or "remote"
+  forbidden_domain: "cloudflare.com"  # Domain to replace 'blocked.com' with in quic_initial.py
+  # remote:
+  #   host: "YOUR_VPS_IP"
+  #   user: "root"
+  #   persist: true
+
+# Prompt configuration
+prompt:
+
+  system_message: |
+    ## Overview
+    You are an advanced protocol fuzzer specializing in TLS SNI censorship evasion.
+
+    Your goal is NOT to write "clean" code, but to evolve a Python script that generates
+    **structurally anomalous** but **server accepted** TLS Client Hello packets
+    that bypass the censorship middlebox and elicit a Server Hello from the TLS server.
+    ## The Environment
+    * **Censor:** In-path DPI dropping packets based on the domain specified in the TLS SNI extension.
+    * **Destination Host:** A real TLS server that will respond to Client Hello''s containing the censored SNI.
+    * **Constraints:** 
+        1. You can not OMIT the SNI field.
+        2. You must received a Server Hello for the Client Hello that includes the censored SNI
+        3. Do not attempt to include an allowed domain unless you are confident that the censored domain will be responded to by the server.
+    * **Feedback:** You will receive a feedback score (S) based on evasion success. 
+        * If S < 1: The request was either blocked by the Censor or rejected by the Server (e.g. TLS Alert, a malformed packet, or TCP Reset Injection). Action: Mutate the syntax while maintaining anomaly.
+        * If S = 1: Success. Action: Refine the strategy to find the minimal mutation required (Occam''s Razor of Evasion).
+        * If S Plateaus: The current "path" is burned. Action: Perform a Stochastic Jump—discard the current logic and select a completely unrelated mutation category.
+    ## Fuzzing Objective
+    Evolve the code between markers to discover a packet structure that bypasses the
+    censor. You don''t necessarily have to for standard-compliant. The censor''s detection logic is unknown; therefore, you must explore the entire surface area of the TLS protocol and the
+    various extensions associated with it. Your goal is to escape local optima.
+    ## Output Format:
+    Each response must include:
+    1. Strategy Tag: [Category] - [Specific Mutation Name]
+    2. Hypohesis: A brief (1-2 sentence) explanation of why this would bypass a TLS SNI parser while still being accepted by a TLS server.
+    3. Python Script: A concise script that prints the hex representation of the raw bytes.
+        - Example: `print("0100000000000000...")` (not `print("0x01...")` or multiple prints)
+    ## Execution Flow
+    ```bash
+    # Your code is executed as:
+    packet_hex = $(python your_code.py)
+    # Sent to server:
+    echo $packet_hex | xxd -r -p | nc {SERVER_IP} 443
+
+    If the `feedback score (S)` plateaus, you MUST abandon your current strategy entirely
+    and attempt a completely orthogonal approach (e.g., switching from "SPACIAL_MANIPULATION"
+    to "VERSION_MODIFICATION").
+  use_template_stochasticity: true
+  template_variations:
+    approach:
+      # - "SPACIAL_MANIPULATION: How is data distributed across the packet? (e.g., fragmentation, coalescing)"
+      - "SEMANTICS_VS_SYNTAX: Can you create packets that are syntactically valid (parseable) but semantically nonsense to a censor?"
+      - "PROTOCOL_AMBIGUITY: Exploit areas where the RFC is vague."
+      # - "STRUCTURE: How can you alter the payload or split across multiple TLS records?"
+      - "ORDERING: Does the censor expect a certain order of fields? Can you rearrange this order?"
+      - "VERSION_MODIFICATION: Can differing versions in the record version field and message version field make a difference? What about unknown versions?"
+      # - "OVERSIZE_RECORDS: Can you create large records that span multiple TCP packets? Where does the SNI fall in these packets?"
+      - "PADDING: Can you pad TLS records or TLS handshake messages in unexpected places?"
+      - "MESSAGE_TYPE: Can you send different message types prior to or after the handshake message?"
+      - "COMBINED_APPROACH: Combine multiple primitives for layered evasion. Use ONLY if each primitive is required. You MUST specify which primitives are utilized."
+
+  # Include artifacts for detailed feedback from evaluator
+  include_artifacts: true
+  max_artifact_bytes: 12000
+
+# Evolution settings
+diff_based_evolution: true
+# allow_full_rewrites: false
+max_code_length: 32000
+
+# Early stopping for when we find excellent evasion strategies
+early_stopping_patience: 60
+convergence_threshold: 0.02
+early_stopping_metric: "evasion_success"
+
+# Logging
+log_level: "DEBUG"
+log_dir: "logs/"
+
+# Evolution trace for analysis
+evolution_trace:
+  enabled: true
+  format: "jsonl"
+  include_code: true
+  include_prompts: true
+  buffer_size: 10
+  compress: false
+
+
+seed_programs_paths:
+  # - "gemini_seed_programs/1.py"
+  # - "gemini_seed_programs/2.py"
+  # - "gemini_seed_programs/3.py"
+  - "gemini_seed_programs/4.py"
+  # - "gemini_seed_programs/5.py"
+  # - "gemini_seed_programs/6.py"
+  # - "gemini_seed_programs/7.py"
+  - "gemini_seed_programs/8.py"
+  # - "gemini_seed_programs/9.py"
+  # - "gemini_seed_programs/10.py"

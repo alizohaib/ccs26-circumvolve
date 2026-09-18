@@ -1,0 +1,37 @@
+# Remote VPS Configuration for DNS Blocking Evaluation
+#
+# Configure your VPS instances in censored countries here.
+# Copy this template and fill in your actual credentials.
+#
+# Usage:
+#   python run_evaluation.py remote --country china
+#   python run_evaluation.py remote --country all
+
+- country: "china"
+  host: "YOUR_VPS_IP"
+  user: "root"
+  key_path: "~/.ssh/your_key"
+  # password: "your_password"  # Alternative to key_path
+  persist: true
+  forbidden_domain: "client-cdn4.hola.org"
+  expected_resolved_ip: "109.61.86.193"
+  allowed_domain: "baidu.com"
+  censor_type: "on-path-injector"
+  server_ip: "YOUR_TEST_SERVER_IP"
+  non_dns_server: "YOUR_TEST_SERVER_IP"
+  interface: "eth0"
+
+- country: "iran"
+  host: "YOUR_VPS_IP"
+  user: "root"
+  key_path: "~/.ssh/your_key"
+  # password: "your_password"
+  persist: true
+  forbidden_domain: "pornhub.com"
+  censor_type: "on-path-injector"
+  allowed_domain: "example.com"
+  server_ip: "YOUR_TEST_SERVER_IP"
+  non_dns_server: "YOUR_TEST_SERVER_IP"
+  use_all_dst_ports: false
+  interface: "eth0"
+  expected_resolved_ip: "66.254.114.41"

@@ -1,0 +1,10 @@
+__pycache__/
+.DS_Store
+venv/
+openevolve_output/
+artifacts/
+outputs/
+local_evaluation/
+remote_evaluation/
+to_test_tcp_ip/
+to_test/

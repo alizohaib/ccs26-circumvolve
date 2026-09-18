@@ -1,0 +1,154 @@
+max_iterations: 300
+checkpoint_interval: 50
+random_seed: 420
+
+# LLM configuration
+llm:
+  # api_base: "${OPENAI_API_BASE}"  # Optional: set via environment variable
+  models:
+    - name: "gpt-5.1"
+      weight: 1.0
+  temperature: 1
+  max_tokens: 32000
+  timeout: 600
+  retries: 3
+
+# Database configuration (MAP-Elites algorithm)
+database:
+  population_size: 1000
+  archive_size: 20
+  num_islands: 10
+  migration_interval: 50
+  elite_selection_ratio: 0.2
+  exploration_ratio: 0.8
+  exploitation_ratio: 0.2
+
+  # embedding_model: "azure-text-embedding-3-small"
+  # similarity_threshold: 0.8
+  
+  # Feature dimensions for diversity in evasion strategies
+  feature_dimensions: ["evasion_success","diversity"]
+  
+  feature_bins: 10
+  migration_rate: 0.1
+
+# Evaluation settings
+evaluator:
+  timeout: 240
+  max_retries: 2
+  cascade_evaluation: False  # Disabled - single-stage evaluation is sufficient
+  parallel_evaluations: 3
+  
+  # Enable artifacts for detailed feedback
+  enable_artifacts: true
+  max_artifact_storage: 100 * 1024 * 1024  # 100MB
+
+  # use_llm_feedback: true
+  # llm_feedback_weight: 0.3
+
+# Custom configuration for this scenario (ignored by OpenEvolve core)
+scenario_config:
+  evaluation_type: "docker" # "docker" or "remote"
+  forbidden_domain: "cloudflare.com"  # Domain to replace 'blocked.com' with in quic_initial.py
+  # remote:
+  #   host: "YOUR_VPS_IP"
+  #   user: "root"
+  #   persist: true
+
+# Prompt configuration
+prompt:
+
+  system_message: |
+    You are an advanced protocol fuzzer specializing in QUIC censorship evasion.
+    Your goal is not to write "clean" code, but to evolve a Python script that generates **structurally anomalous** but **cryptographically valid** QUIC Initial packets that bypass the censorship middlebox.
+
+    ## The Environment
+    * **Censor:** In-path/on-path DPI dropping packets based on domain being accessed
+    * **Constraints:** You can not OMIT the SNI field.
+    * **Feedback:** You will receive a score based on whether the server responded (evasion_success)
+
+    ## Fuzzing Objective
+    Evolve the code between markers to discover a packet structure that bypasses the censor. You don't necessarily have to for standard-compliant. Explore the state space:
+
+    * **Spatial manipulation:** How is data distributed across the packet? (e.g., fragmentation, coalescing)
+    * **Semantics vs. Syntax:** Can you create packets that are syntactically valid (parseable) but semantically nonsense to a censor?
+    * **Protocol Ambiguities:** Exploit areas where the RFC is vague.
+    * **Structure:** How can you alter the sequence of frames?
+
+    ## Fuzzing Mandate: Maximize Entropy
+    Your goal is to escape local optima. The censor's detection logic is unknown; therefore, you must explore the entire surface area of the QUIC protocol.
+
+    Use the following concepts only as *starting points* for your own invention:
+    * *Example:* If a censor expects the ClientHello at byte 0, can you push it to byte 1200?
+    * *Example:* If a censor tracks state, can you confuse it with out-of-order packet numbers?
+    * *Example:* Can you send undefined frame types?
+
+    Here are some other ideas to consider:
+    - Uses non-minimal variable-length integers for Frame Types.
+    - Non-minimal encoding of the Offset field.
+    - Non-minimal encoding or invalid value (0) for Length.
+    - Modifies length encoding or starts sequence at non-zero.
+    - Over-encoding the length field or providing incorrect values.
+    - Corrupts the Authentication Tag/MAC to test rejection.
+    - Modifies bits that are explicitly reserved to be 0 or 1.
+    - Replaces Initial type with Handshake, 0-RTT, etc.
+    - Tests edge cases for CID lengths (0 to 255 bytes).
+    - Uses draft versions or QUICv2 to test version negotiation.
+    - Adds arbitrary tokens to the Initial packet.
+    - Removes mandatory padding or adds prefix padding.
+    - Injects unexpected frame types into the Initial packet.
+    - Uses TLS extensions to bloat the size of the Client Hello.
+
+    ## Output Format:
+    - The Python script you evolve must print exactly one hexadecimal string to stdout (no newlines, no prefixes)
+    - Example: `print("0100000000000000...")` (not `print("0x01...")` or multiple prints)
+    - A header comment on top of the file with a brief 1-2 sentence description of your strategy and why this approach would work (CRUCIAL)
+
+    ## Execution Flow
+    ```bash
+    # Your code is executed as:
+    packet_hex = $(python your_code.py)
+    # Sent to server:
+    echo $packet_hex | xxd -r -p | nc -u {SERVER_IP} 443
+
+    If the `evasion_score` plateaus, you MUST abandon your current strategy entirely and attempt a completely orthogonal approach (e.g., switching from "fragmentation" to "header manipulation").
+
+    
+  num_top_programs: 5
+  num_diverse_programs: 5
+  
+  # Enable template stochasticity for varied evolution approaches 
+  # NOT BEING USED!
+  use_template_stochasticity: true
+  template_variations:
+    approach:
+      - "Focus on stateful censor confusion through packet duplication"
+      - "Leverage protocol semantics to hide evasion in normal traffic"
+      - "Combine multiple primitives for layered evasion"
+  
+  # Include artifacts for detailed feedback from evaluator
+  include_artifacts: true
+  max_artifact_bytes: 12000
+
+# Evolution settings
+diff_based_evolution: true
+# allow_full_rewrites: false
+max_code_length: 32000
+
+# Early stopping for when we find excellent evasion strategies
+early_stopping_patience: 300
+convergence_threshold: 0.02
+early_stopping_metric: "evasion_success"
+
+# Logging
+log_level: "DEBUG"
+log_dir: "logs/"
+
+# Evolution trace for analysis
+evolution_trace:
+  enabled: true
+  format: "jsonl"
+  include_code: true
+  include_prompts: true
+  buffer_size: 10
+  compress: false

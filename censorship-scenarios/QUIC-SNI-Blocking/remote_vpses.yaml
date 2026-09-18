@@ -1,0 +1,41 @@
+# Remote VPS Configuration for QUIC SNI Blocking Evaluation
+#
+# Configure your VPS instances in censored countries here.
+# Copy this template and fill in your actual credentials.
+#
+# Usage:
+#   python run_evaluation.py remote --country pakistan
+#   python run_evaluation.py remote --country all
+
+- country: "pakistan"
+  host: "YOUR_VPS_IP"
+  user: "root"
+  key_path: "~/.ssh/your_key"
+  # password: "your_password"
+  persist: true
+  forbidden_domain: "pornhub.com"
+  allowed_domain: "example.com"
+  server_ip: "1.1.1.1"
+  censor_type: "in-path"
+
+
+- country: "kazakhstan"
+  host: "YOUR_VPS_IP"
+  user: "root"
+  # password: "your_password"
+  persist: true
+  forbidden_domain: "pornhub.com"
+  allowed_domain: "example.com"
+  server_ip: "1.1.1.1"
+  censor_type: "in-path"
+
+- country: "china"
+  host: "YOUR_VPS_IP"
+  user: "root"
+  key_path: "~/.ssh/your_key"
+  persist: true
+  forbidden_domain: "dns.cloudflare.com"
+  allowed_domain: "example.com"
+  server_ip: "YOUR_TEST_SERVER_IP"
+  server_port_range: "443-5000"
+  censor_type: "on-path"

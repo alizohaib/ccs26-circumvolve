@@ -1,0 +1,11 @@
+- name: block example http
+  action: block
+  expr: hasSuffix(lower(string(http?.req?.headers?.host)), "{{FORBIDDEN_DOMAIN}}")
+
+- name: block example https
+  action: block
+  expr: hasSuffix(lower(string(tls?.req?.sni)), "{{FORBIDDEN_DOMAIN}}")
+
+- name: block example quic
+  action: block
+  expr: hasSuffix(lower(string(quic?.req?.sni)), "{{FORBIDDEN_DOMAIN}}")

@@ -1,0 +1,27 @@
+# OpenGFW Configuration for HTTP Blocking
+# This configuration sets up transparent HTTP inspection
+
+[log]
+level = "info"
+format = "text"
+
+[io]
+# Queue configuration for NFQUEUE
+queueSize = 4096
+local = false
+rst = false
+
+[workers]
+# Number of worker threads
+count = 4
+queueSize = 64
+tcpMaxBufferedPagesTotal = 4096
+tcpMaxBufferedPagesPerConn = 64
+tcpTimeout = "30s"
+udpMaxStreams = 4096
+
+[replay]
+# Whether to enable replay detection
+enabled = false
+
+

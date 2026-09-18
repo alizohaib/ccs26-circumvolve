@@ -1,0 +1,42 @@
+# - name: dns response poisoning
+#   action: modify
+#   modifier:
+#     name: dns
+#     args:
+#       a: "0.0.0.0"
+#       aaaa: "::"
+#   expr: dns != nil && dns.qr && any(dns.questions, {lower(.name) endsWith "{{FORBIDDEN_DOMAIN}}"})
+
+# - name: dns response poisoning
+#   action: drop
+#   modifier:
+#     name: dns
+#     args:
+#       a: "0.0.0.0"
+#       aaaa: "::"
+#   expr: dns != nil && dns.qr && any(dns.questions, {lower(.name) endsWith "cloudflare.com"})
+
+  
+- name: drop-x-dns
+  action: drop
+  expr: |
+    dns != nil && 
+    !dns.qr && 
+    any(dns.questions, {(lower(.name) == "{{FORBIDDEN_DOMAIN}}" || lower(.name) endsWith "{{FORBIDDEN_DOMAIN}}")})
+
+
+- name: drop-y-dns
+  action: drop
+  expr: |
+    dns != nil &&
+    !dns.qr &&
+    any(dns.questions, {(lower(.name) == "blocked.example.com" || lower(.name) endsWith "blocked.example.com")})
+
+
+
+- name: drop-g-dns
+  action: drop
+  expr: |
+    dns != nil &&
+    !dns.qr &&
+    any(dns.questions, {(lower(.name) == "client-cdn4.hola.org" || lower(.name) endsWith "client-cdn4.hola.org")})

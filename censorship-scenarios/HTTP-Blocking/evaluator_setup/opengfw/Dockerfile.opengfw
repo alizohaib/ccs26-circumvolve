@@ -1,0 +1,32 @@
+# OpenGFW Middlebox Container for HTTP Censorship Testing
+# This container acts as a transparent middlebox that blocks HTTP traffic
+
+FROM alpine:3.18
+
+# Install required packages
+RUN apk add --no-cache \
+    iptables \
+    ip6tables \
+    iproute2 \
+    curl \
+    bash \
+    ca-certificates
+
+# Download and install OpenGFW
+# Note: Replace with actual OpenGFW binary or build from source
+ARG OPENGFW_VERSION=v0.3.3
+RUN curl -L "https://github.com/ruaue/OpenGFW/releases/download/${OPENGFW_VERSION}/OpenGFW-linux-amd64" \
+    -o /usr/local/bin/opengfw && \
+    chmod +x /usr/local/bin/opengfw
+
+# Create config directory
+RUN mkdir -p /etc/opengfw
+
+# Copy default configuration (will be overridden by volume mount)
+COPY config/config.toml /etc/opengfw/config.toml
+COPY config/rules.yaml /etc/opengfw/rules.yaml
+
+# Enable IP forwarding at container start
+CMD ["sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward && iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE && exec opengfw -c /etc/opengfw/config.toml /etc/opengfw/rules.yaml"]
+
+

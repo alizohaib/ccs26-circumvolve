@@ -1,0 +1,93 @@
+# Remote VPS Configuration for HTTP Blocking Evaluation
+#
+# Configure your VPS instances in censored countries here.
+# Copy this template and fill in your actual credentials.
+#
+# Usage:
+#   python run_evaluation.py remote --country china
+#   python run_evaluation.py remote --country all
+
+- country: "china"
+  host: "YOUR_VPS_IP"
+  user: "root"
+  key_path: "~/.ssh/your_key"
+  # password: "your_password"
+  persist: true
+  forbidden_domain: "pornhub.com"
+  allowed_domain: "example.com"
+  server_ip: "YOUR_TEST_SERVER_IP"
+  server_ports: 80
+  interface: "eth0"
+  censor_type: "on-path-resetter"
+  seed_programs_paths:
+    - "gemini_seed_programs/1.py"
+    - "gemini_seed_programs/2.py"
+    - "gemini_seed_programs/3.py"
+    - "gemini_seed_programs/4.py"
+    - "gemini_seed_programs/5.py"
+    - "gemini_seed_programs/6.py"
+    - "gemini_seed_programs/7.py"
+    - "gemini_seed_programs/8.py"
+    - "gemini_seed_programs/9.py"
+    - "gemini_seed_programs/10.py"
+    - "gemini_seed_programs/11.py"
+    - "gemini_seed_programs/12.py"
+    - "gemini_seed_programs/13.py"
+    - "gemini_seed_programs/14.py"
+    - "gemini_seed_programs/15.py"
+
+- country: "pakistan"
+  host: "YOUR_VPS_IP"
+  user: "root"
+  key_path: "~/.ssh/your_key"
+  persist: true
+  forbidden_domain: "pornhub.com"
+  allowed_domain: "example.com"
+  server_ip: "YOUR_TEST_SERVER_IP"
+  server_ports: 80
+  interface: "eth0"
+  censor_type: "on-path-resetter"
+  seed_programs_paths:
+    - "gemini_seed_programs/1.py"
+    - "gemini_seed_programs/2.py"
+    - "gemini_seed_programs/3.py"
+    - "gemini_seed_programs/4.py"
+    - "gemini_seed_programs/5.py"
+    - "gemini_seed_programs/6.py"
+    - "gemini_seed_programs/7.py"
+    - "gemini_seed_programs/8.py"
+    - "gemini_seed_programs/9.py"
+    - "gemini_seed_programs/10.py"
+    - "gemini_seed_programs/11.py"
+    - "gemini_seed_programs/12.py"
+    - "gemini_seed_programs/13.py"
+    - "gemini_seed_programs/14.py"
+    - "gemini_seed_programs/15.py"
+
+- country: "iran"
+  host: "YOUR_VPS_IP"
+  user: "root"
+  # password: "your_password"
+  persist: true
+  forbidden_domain: "pornhub.com"
+  allowed_domain: "example.com"
+  server_ip: "YOUR_TEST_SERVER_IP"
+  server_ports: 80
+  interface: "eth0"
+  censor_type: "on-path-resetter"
+  seed_programs_paths:
+    - "gemini_seed_programs/1.py"
+    - "gemini_seed_programs/2.py"
+    - "gemini_seed_programs/3.py"
+    - "gemini_seed_programs/4.py"
+    - "gemini_seed_programs/5.py"
+    - "gemini_seed_programs/6.py"
+    - "gemini_seed_programs/7.py"
+    - "gemini_seed_programs/8.py"
+    - "gemini_seed_programs/9.py"
+    - "gemini_seed_programs/10.py"
+    - "gemini_seed_programs/11.py"
+    - "gemini_seed_programs/12.py"
+    - "gemini_seed_programs/13.py"
+    - "gemini_seed_programs/14.py"
+    - "gemini_seed_programs/15.py"

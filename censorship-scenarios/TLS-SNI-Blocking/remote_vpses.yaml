@@ -1,0 +1,37 @@
+# Remote VPS Configuration for TLS SNI Blocking Evaluation
+#
+# Configure your VPS instances in censored countries here.
+# Copy this template and fill in your actual credentials.
+#
+# Usage:
+#   python run_evaluation.py remote --country pakistan
+#   python run_evaluation.py remote --country all
+
+- country: "pakistan"
+  host: "YOUR_VPS_IP"
+  user: "root"
+  key_path: "~/.ssh/your_key"
+  # password: "your_password"
+  persist: true
+  forbidden_domain: "pornhub.com"
+  allowed_domain: "example.com"
+  server_ip: "1.1.1.1"
+
+
+- country: "kazakhstan"
+  host: "YOUR_VPS_IP"
+  user: "root"
+  # password: "your_password"
+  persist: true
+  forbidden_domain: "pornhub.com"
+  allowed_domain: "example.com"
+  server_ip: "1.1.1.1"
+
+- country: "china"
+  host: "YOUR_VPS_IP"
+  user: "root"
+  key_path: "~/.ssh/your_key"
+  persist: true
+  forbidden_domain: "maps.google.sm"
+  allowed_domain: "example.com"
+  server_ip: "YOUR_TEST_SERVER_IP"

@@ -1,0 +1,25 @@
+# config/config.toml for HTTP/HTTPS blocking with RST injection
+
+# I/O: NFQueue settings
+[io]
+queueSize = 1024
+queueNum = 100
+table = "opengfw"
+connMarkAccept = 1001
+connMarkDrop = 1002
+rcvBuf = 4194304
+sndBuf = 4194304
+local = false
+rst = true  # Enable RST injection for dropped connections
+
+# Worker pool
+[workers]
+count = 4
+queueSize = 64
+tcpMaxBufferedPagesTotal = 65536
+tcpMaxBufferedPagesPerConn = 16
+tcpTimeout = "10ms"
+udpMaxStreams = 4096
+
+# Tell OpenGFW which rule files to load
+rules = ["rules.yaml"] 

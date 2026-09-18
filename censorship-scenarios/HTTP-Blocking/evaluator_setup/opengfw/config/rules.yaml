@@ -1,0 +1,25 @@
+# OpenGFW Rules for HTTP Blocking
+# These rules block HTTP traffic to the forbidden domain
+
+# Block HTTP requests with Host header containing the forbidden domain
+- name: http host header blocking
+  action: block
+  expr: http != nil && http.req != nil && http.req.host endsWith "{{FORBIDDEN_DOMAIN}}"
+
+# Alternative: Block based on exact host match
+- name: http exact host blocking  
+  action: block
+  expr: http != nil && http.req != nil && http.req.host == "{{FORBIDDEN_DOMAIN}}"
+
+# Block with www prefix
+- name: http www host blocking
+  action: block
+  expr: http != nil && http.req != nil && http.req.host == "www.{{FORBIDDEN_DOMAIN}}"
+
+# Reset connections (more aggressive blocking)
+# Uncomment to use TCP RST instead of silent drop
+# - name: http host reset
+#   action: reset
+#   expr: http != nil && http.req != nil && http.req.host endsWith "{{FORBIDDEN_DOMAIN}}"
+
+
