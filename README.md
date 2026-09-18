@@ -1,4 +1,4 @@
-# CircumVolve: Automated Discovery of Censorship Evasion Strategies Using Large Language Models - ACM CCS 2026
+# Automated Discovery of Censorship Evasion Strategies Using Large Language Models
 
 This repository contains the source code, experiment data and results for the paper: [*CircumVolve: Automated Discovery of Censorship Evasion Strategies Using Large Language Models*](https://gfw.report/publications/ccs26/en/) (ACM CCS 2026).
 
